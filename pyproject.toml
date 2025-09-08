@@ -1,0 +1,71 @@
+[build-system]
+requires = ["poetry-core ~= 1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "algo_vs_doc"
+version = "1.0.0"
+description = "Code for analyzing the Algo Vs Doc study in VUmc and LUMC"
+authors = ["Daan de Bruin <daan.debruin@pacmed.nl>" , "Anne de Hond <a.a.h.dehond@umcutrecht.nl>", "Patrick Thoral <p.j.thoral@olvg.nl>"]
+
+[tool.poetry.dependencies]
+python = "~3.12.0"
+numpy = "~2.0.2"
+pandas = "~2.2.3"
+matplotlib = "~3.9.2"
+scikit-learn = "1.5.2"
+statsmodels = "0.14.4"
+jupyter = "^1.1.1"
+pyarrow = "^19.0.1"
+ipykernel = "^6.29.5"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "~4.0.1"
+
+[tool.poetry.group.lint.dependencies]
+mypy = "~1.11.2"
+ruff = "~0.6.8"
+
+[tool.poetry.group.test.dependencies]
+coverage = { version = "7.6.1", extras = ["toml"] }
+pytest = "~8.3.3"
+pytest-mock = "~3.14.0"
+
+[tool.coverage.run]
+branch = false
+source = ["algo_vs_doc/"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 0 # Not a production repo, so we can be a bit more lenient
+ignore_errors = false
+show_missing = true
+# Regexes for lines to exclude from consideration
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "AbstractMethodError",
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+    # Verbose wrappers
+    "if verbose",
+    "if plot",
+    "if show",
+]
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true
+python_version = '3.12'
+files = 'algo_vs_doc'
+exclude = [
+    '^(tests|docs)/.',
+    'algo_vs_doc/*'
+]
