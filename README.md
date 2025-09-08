@@ -37,10 +37,10 @@ The predictions from VUmc were stored in a separate database (VUmc) using a web 
 ![Input From MetrIC](./img/metric-readmission-risk-form.png)
 
 ## Getting started
-This repository uses Python version 3.12.3 as its main programming language. Python package dependencies were managed using Poetry.
+This repository uses Python version 3.12.10 as its main programming language. Python package dependencies were managed using Poetry.
 
 ### Install Python
-Install python from the official website: https://www.python.org/downloads/release/python-3123/
+Install python from the official website: https://www.python.org/downloads/release/python-31210/
 
 ### Install poetry
 Poetry is a Python packaging and dependency manager. Depending on your operating system, the installation procedure differs, so you it is recommend the official docs: https://python-poetry.org/docs/
