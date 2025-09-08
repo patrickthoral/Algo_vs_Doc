@@ -1,0 +1,21 @@
+,All,VUmc,LUMC
+"ICU discharges, n",399,154,245
+"Age, mean (SD)",59 (15),57 (16),61 (15)
+"Female, n (%)",128 (32.1),46 (29.9),82 (33.5)
+"Admitting specialty, n (%)",,,
+Surgical,253 (63.4),63 (40.9),190 (77.6)
+Cardiothoracic Surgery,145 (36.3),3 (1.9),142 (58.0)
+General Surgery,82 (20.6),43 (27.9),39 (15.9)
+Neurosurgery,11 (2.8),11 (7.1),0 (0.0)
+Otolaryngology,10 (2.5),3 (1.9),7 (2.9)
+Other surgery,5 (1.3),3 (1.9),2 (0.8)
+Medical,119 (29.8),85 (55.2),34 (13.9)
+Internal Medicine,45 (11.3),27 (17.5),18 (7.3)
+Gastro-enterology,6 (1.5),6 (3.9),0 (0.0)
+Cardiology,24 (6.0),19 (12.3),5 (2.0)
+Neurology,19 (4.8),12 (7.8),7 (2.9)
+Pulmonary Medicine,22 (5.5),21 (13.6),1 (0.4)
+Other medical,3 (0.8),0 (0.0),3 (1.2)
+Unspecified,27 (6.8),6 (3.9),21 (8.6)
+"Length of Stay, days, median (IQR)",2.0 (1.1-3.9),2.3 (1.3-4.0),1.9 (1.0-3.8)
+"Readmission/death within 7 days after discharge, n (%)",24 (6.0),14 (9.1),10 (4.1)

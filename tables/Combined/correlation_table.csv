@@ -1,0 +1,4 @@
+,algo_at_doc_prediction,algo_at_discharge,doc_prediction
+algo_at_doc_prediction,1.0,0.8979770340452353,0.22811678128656918
+algo_at_discharge,0.8979770340452353,1.0,0.2316507990094371
+doc_prediction,0.22811678128656918,0.2316507990094371,1.0

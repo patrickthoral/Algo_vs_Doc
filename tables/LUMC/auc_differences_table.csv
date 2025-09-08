@@ -1,0 +1,15 @@
+,Physician (Category),Model,Combined Model and Physician (Percentage),Combined Model and Physician (Category)
+Physician (Percentage),"0.055 [-0.080, 0.19]
+p = 0.40","0.088 [-0.14, 0.32]
+p = 0.45","0.087 [-0.19, 0.35]
+p = 0.50","0.14 [-0.023, 0.34]
+p = 0.10"
+Physician (Category),,"0.033 [-0.20, 0.26]
+p = 0.78","0.032 [-0.24, 0.27]
+p = 0.81","0.086 [-0.10, 0.28]
+p = 0.42"
+Model,,,"-0.00085 [-0.062, 0.084]
+p = 0.88","0.053 [-0.0084, 0.15]
+p = 0.13"
+Combined Model and Physician (Percentage),,,,"0.054 [-0.072, 0.20]
+p = 0.37"

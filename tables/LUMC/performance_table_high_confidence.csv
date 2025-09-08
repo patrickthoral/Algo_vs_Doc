@@ -1,0 +1,6 @@
+,n,auroc_with_confidence_interval,auroc,auroc_confidence_interval_lower,auroc_confidence_interval_upper,calibration_intercept,calibration_slope,calibration_loss
+Physician (Percentage),129,"0.27 [0.027, 0.73]",0.26851851851851855,0.02734375,0.7322834645669292,"-0.68 [-1.9, 0.50]","-0.28 [-0.52, -0.047]",0.020
+Physician (Category),129,"0.48 [0.46, 0.50]",0.48412698412698413,0.46484375,0.49609375,"-3.5 [-4.9, -2.1]","-13. [-2.0e+04, 2.0e+04]",0.31
+Model,129,"0.70 [0.078, 1.0]",0.6984126984126984,0.078125,1.0,"-0.57 [-1.7, 0.59]","2.0 [-0.076, 4.0]",0.031
+Combined Model and Physician (Percentage),129,"0.83 [0.45, 1.0]",0.8253968253968254,0.4453125,1.0,"-0.45 [-1.6, 0.72]","2.0 [0.38, 3.5]",0.017
+Combined Model and Physician (Category),129,"0.69 [0.070, 1.0]",0.6878306878306878,0.0703125,1.0,"-0.10 [-1.3, 1.1]","0.88 [-0.16, 1.9]",0.014
