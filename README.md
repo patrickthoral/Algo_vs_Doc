@@ -19,7 +19,7 @@ Do the intensivist predictions improve by combining them with predictions by the
 
 ## Who did the analyses?
 
-[Patrick Thoral](https://github.com/patrickthoral) (VUmc) and Anne de Hond (LUMC) were the primary researchers. They were in charge of the analysis and developed the analysis code in this repository. The preprocessing to generate the data on which they could do their analysis was made by [Daan de Bruin](https://github.com/daandebruin) (Pacmed) initially and updated by Patrick Thoral for final manuscript preparation.
+[Patrick Thoral](https://github.com/patrickthoral) (VUmc, currently OLVG) and [Anne de Hond](https://github.com/annedh93) (LUMC, currently UMC Utrecht) were the primary researchers. They were in charge of the analysis and developed the analysis code in this repository. The preprocessing to generate the data on which they could do their analyses was made by [Daan de Bruin](https://github.com/daandebruin) (Pacmed) initially, and updated by Patrick Thoral for final manuscript preparation.
 
 ## What is the input to the code in this repository?
 
@@ -34,7 +34,7 @@ LUMC intensivists documented their risk estimates and factors directly in MetaVi
 
 The predictions from VUmc were stored in a separate database (VUmc) using a web application developed by Patrick Thoral using an interface with the Epic Systems EHR. The backend for retrieving real-time data from the EHR was developed by Ronald Driessen, Clinical IT Specialist, VUmc.
 
-![Input From Metrick](./img/metric-readmission-risk-form.png)
+![Input From MetrIC](./img/metric-readmission-risk-form.png)
 
 ## Getting started
 This repository uses Python version 3.12.3 as its main programming language. Python package dependencies were managed using Poetry.
