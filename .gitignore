@@ -117,7 +117,6 @@ database/db_data/*
 # Other
 */docker-compose-extractor.yml
 *credentials.json
-.pre-commit-config.yaml
 
 # folders and files created by tests
 */metastore_db/*
