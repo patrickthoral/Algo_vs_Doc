@@ -126,3 +126,20 @@ database/db_data/*
 
 # allow README.md 'stubs' for creating 'empty' directories
 !README.md
+
+# temporary files
+/tmp/**
+*.tmp
+
+# Local analysis results
+/results/*
+!/results/README.md
+
+# Earlier generated CSV outputs
+/outputs/*
+!/outputs/README.md
+
+# Keep source SVG figures and formatted Word tables, not intermediate exports
+/figures/**/*.pdf
+/figures/**/*.png
+/tables/**/*.csv

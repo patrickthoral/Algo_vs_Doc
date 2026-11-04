@@ -4,6 +4,12 @@
 
 # `data` folder
 
-Storage the merged data here to allow accessing the data from relative paths from the Jupyter Notebooks.
-By default, the data files in this folder are excluded from the repository using [`.gitignore`](../.gitignore) to 
-prevent them from being committed.
+`1-create-analysis-dataset.ipynb` writes the flat analysis files here:
+
+- `LUMC/algo_doc_dataset.csv`
+- `VUmc/algo_doc_dataset.csv`
+
+The later analysis notebooks load these CSV files through `algo_vs_doc.prediction_data`.
+
+The notebooks access these files through local paths. Data files in this directory are excluded
+from Git by [`.gitignore`](../.gitignore).
