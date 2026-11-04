@@ -18,3 +18,10 @@ repos:
         entry: poetry run nbstripout
         language: system
         files: \.ipynb$
+
+      - id: pytest
+        name: pytest
+        entry: poetry run pytest -W error -q --basetemp=tmp/pre-commit-pytest
+        language: system
+        pass_filenames: false
+        always_run: true

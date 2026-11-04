@@ -141,10 +141,11 @@ def test_notebook_cells_execute_with_synthetic_data(tmp_path):
         if "supplemental_tables.append(ward_descriptives"
         in "".join(cell.get("source", []))
     )
-    source = source[source.index("from algo_vs_doc import ward_descriptives") :]
-    source = source[: source.index("from algo_vs_doc import subgroup_tables")]
+    source = source[source.index("ward_table = pd.read_csv(") :]
+    source = source[: source.index("subgroup_table = pd.read_csv(")]
     context.update(
         supplemental_tables=[],
+        ward_descriptives=ward_descriptives,
         word_tables=word_tables,
         outputs_folder=str(tmp_path / "outputs"),
         report_cohort="Combined",

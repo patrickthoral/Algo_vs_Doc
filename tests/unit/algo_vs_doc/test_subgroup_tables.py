@@ -80,8 +80,8 @@ def test_new_notebook_sources_export_synthetic_tables(tmp_path):
         for c in notebook["cells"]
         if "supplemental_tables.append(subgroup_tables" in "".join(c.get("source", []))
     )
-    source = source[source.index("from algo_vs_doc import subgroup_tables") :]
-    source = source[: source.index("from algo_vs_doc import low_risk_event_tables")]
+    source = source[source.index("subgroup_table = pd.read_csv(") :]
+    source = source[: source.index("individual_case_dir =")]
     labels_source = next(
         "".join(cell.get("source", []))
         for cell in notebook["cells"]
@@ -91,6 +91,7 @@ def test_new_notebook_sources_export_synthetic_tables(tmp_path):
     context["replace"] = replace
     context.update(
         supplemental_tables=[],
+        subgroup_tables=subgroup_tables,
         word_tables=word_tables,
         formatted_tables_dir=str(tmp_path / "tables/Combined"),
     )
