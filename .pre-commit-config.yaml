@@ -1,15 +1,20 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+  - repo: local
     hooks:
       - id: ruff
-        args:
-          - --fix
-          - --no-unsafe-fixes
-      - id: ruff-format
+        name: ruff
+        entry: poetry run ruff check --fix --no-unsafe-fixes
+        language: system
+        types: [python]
 
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.9.1
-    hooks:
+      - id: ruff-format
+        name: ruff-format
+        entry: poetry run ruff format
+        language: system
+        types: [python]
+
       - id: nbstripout
+        name: nbstripout
+        entry: poetry run nbstripout
+        language: system
         files: \.ipynb$

@@ -23,6 +23,7 @@ python-docx = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "~4.0.1"
+nbstripout = "^0.9.1"
 
 [tool.poetry.group.lint.dependencies]
 mypy = "~1.11.2"
