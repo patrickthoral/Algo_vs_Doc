@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1578" viewBox="0 0 1000 1578" role="img" aria-labelledby="title description">
+  <title id="title">Study enrolment flow</title>
+  <desc id="description">Separate hospital panels showing eligible ICU discharges after each sequential exclusion.</desc>
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path id="arrowhead-path" d="M0,0 L8,4 L0,8 Z" fill="#000000" />
+    </marker>
+  </defs>
+  <g id="flow" font-family="Arial, Helvetica, sans-serif" fill="#000000">
+    <rect id="figure-border" x="1" y="1" width="998" height="1576" fill="none" stroke="#000000" stroke-width="1.5" />
+    <line id="hospital-divider-1" x1="1" y1="796" x2="999" y2="796" stroke="#000000" stroke-width="1.5" />
+    <g id="panel-vumc">
+      <text id="panel-vumc-title" x="25" y="60" font-size="18">VUmc</text>
+      <g id="stage-vumc-total_icu_admissions">
+        <rect id="stage-vumc-total_icu_admissions-box" x="350" y="42" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-vumc-total_icu_admissions-label" x="490" y="65" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">316 admissions to intensive care</tspan>
+          <tspan x="490" dy="16">unit</tspan>
+        </text>
+      </g>
+      <path id="arrow-vumc-died_on_icu" d="M490 94 V174" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+      <g id="stage-vumc-died_on_icu">
+        <rect id="stage-vumc-died_on_icu-box" x="350" y="180" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-vumc-died_on_icu-label" x="490" y="211" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">261 survived to discharge</tspan>
+        </text>
+      </g>
+      <g id="excluded-vumc-died_on_icu">
+        <path id="excluded-vumc-died_on_icu-connector" d="M490 134 H652" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="excluded-vumc-died_on_icu-box" x="660" y="108" width="310" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="excluded-vumc-died_on_icu-label" x="680" y="139" text-anchor="start" font-size="13">
+          <tspan x="680" dy="0">55 died in the ICU</tspan>
+        </text>
+      </g>
+      <path id="arrow-vumc-not_eligible" d="M490 232 V358" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+      <g id="stage-vumc-not_eligible">
+        <rect id="stage-vumc-not_eligible-box" x="350" y="364" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-vumc-not_eligible-label" x="490" y="395" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">206 eligible ICU discharges</tspan>
+        </text>
+      </g>
+      <g id="excluded-vumc-not_eligible">
+        <path id="excluded-vumc-not_eligible-connector" d="M490 295 H652" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="excluded-vumc-not_eligible-box" x="660" y="223" width="310" height="144" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="excluded-vumc-not_eligible-label" x="680" y="255" text-anchor="start" font-size="13">
+          <tspan x="680" dy="0">55 not eligible</tspan>
+          <tspan x="700" dy="18">1 received palliative care</tspan>
+          <tspan x="700" dy="18">13 had a do-not-readmit decision</tspan>
+          <tspan x="700" dy="18">13 transferred to another hospital</tspan>
+          <tspan x="700" dy="18">12 were discharged home</tspan>
+          <tspan x="700" dy="18">16 had length of stay under 12 hours</tspan>
+        </text>
+      </g>
+      <path id="arrow-vumc-missing_predictions" d="M490 416 V558" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+      <g id="stage-vumc-missing_predictions">
+        <rect id="stage-vumc-missing_predictions-box" x="350" y="564" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-vumc-missing_predictions-label" x="490" y="595" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">178 included in analysis</tspan>
+        </text>
+      </g>
+      <g id="excluded-vumc-missing_predictions">
+        <path id="excluded-vumc-missing_predictions-connector" d="M490 487 H652" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="excluded-vumc-missing_predictions-box" x="660" y="445" width="310" height="84" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="excluded-vumc-missing_predictions-label" x="680" y="474" text-anchor="start" font-size="13">
+          <tspan x="680" dy="0">28 missing predictions</tspan>
+          <tspan x="700" dy="18">26 missing physician prediction</tspan>
+          <tspan x="700" dy="18">2 missing algorithm prediction</tspan>
+        </text>
+      </g>
+      <g id="included-vumc-high-dependency-unit">
+        <path id="included-vumc-high-dependency-unit-connector" d="M490 616 V659 H325 V696" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="included-vumc-high-dependency-unit-box" x="170" y="702" width="310" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="included-vumc-high-dependency-unit-label" x="325" y="725" text-anchor="middle" font-size="13">
+          <tspan x="325" dy="0">46 discharged to</tspan>
+          <tspan x="325" dy="18">high-dependency unit</tspan>
+        </text>
+      </g>
+      <g id="included-vumc-nursing-ward">
+        <path id="included-vumc-nursing-ward-connector" d="M490 616 V659 H675 V696" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="included-vumc-nursing-ward-box" x="520" y="702" width="310" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="included-vumc-nursing-ward-label" x="675" y="725" text-anchor="middle" font-size="13">
+          <tspan x="675" dy="0">132 discharged to</tspan>
+          <tspan x="675" dy="18">general ward</tspan>
+        </text>
+      </g>
+    </g>
+    <g id="panel-lumc">
+      <text id="panel-lumc-title" x="25" y="840" font-size="18">LUMC</text>
+      <g id="stage-lumc-total_icu_admissions">
+        <rect id="stage-lumc-total_icu_admissions-box" x="350" y="822" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-lumc-total_icu_admissions-label" x="490" y="845" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">664 admissions to intensive care</tspan>
+          <tspan x="490" dy="16">unit</tspan>
+        </text>
+      </g>
+      <path id="arrow-lumc-died_on_icu" d="M490 874 V954" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+      <g id="stage-lumc-died_on_icu">
+        <rect id="stage-lumc-died_on_icu-box" x="350" y="960" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-lumc-died_on_icu-label" x="490" y="991" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">607 survived to discharge</tspan>
+        </text>
+      </g>
+      <g id="excluded-lumc-died_on_icu">
+        <path id="excluded-lumc-died_on_icu-connector" d="M490 914 H652" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="excluded-lumc-died_on_icu-box" x="660" y="888" width="310" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="excluded-lumc-died_on_icu-label" x="680" y="919" text-anchor="start" font-size="13">
+          <tspan x="680" dy="0">57 died in the ICU</tspan>
+        </text>
+      </g>
+      <path id="arrow-lumc-not_eligible" d="M490 1012 V1138" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+      <g id="stage-lumc-not_eligible">
+        <rect id="stage-lumc-not_eligible-box" x="350" y="1144" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-lumc-not_eligible-label" x="490" y="1175" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">506 eligible ICU discharges</tspan>
+        </text>
+      </g>
+      <g id="excluded-lumc-not_eligible">
+        <path id="excluded-lumc-not_eligible-connector" d="M490 1075 H652" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="excluded-lumc-not_eligible-box" x="660" y="1003" width="310" height="144" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="excluded-lumc-not_eligible-label" x="680" y="1035" text-anchor="start" font-size="13">
+          <tspan x="680" dy="0">101 not eligible</tspan>
+          <tspan x="700" dy="18">4 received palliative care</tspan>
+          <tspan x="700" dy="18">15 had a do-not-readmit decision</tspan>
+          <tspan x="700" dy="18">40 transferred to another hospital</tspan>
+          <tspan x="700" dy="18">18 were discharged home</tspan>
+          <tspan x="700" dy="18">24 had length of stay under 12 hours</tspan>
+        </text>
+      </g>
+      <path id="arrow-lumc-missing_predictions" d="M490 1196 V1338" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+      <g id="stage-lumc-missing_predictions">
+        <rect id="stage-lumc-missing_predictions-box" x="350" y="1344" width="280" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="stage-lumc-missing_predictions-label" x="490" y="1375" text-anchor="middle" font-size="14">
+          <tspan x="490" dy="0">257 included in analysis</tspan>
+        </text>
+      </g>
+      <g id="excluded-lumc-missing_predictions">
+        <path id="excluded-lumc-missing_predictions-connector" d="M490 1267 H652" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="excluded-lumc-missing_predictions-box" x="660" y="1225" width="310" height="84" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="excluded-lumc-missing_predictions-label" x="680" y="1254" text-anchor="start" font-size="13">
+          <tspan x="680" dy="0">249 missing predictions</tspan>
+          <tspan x="700" dy="18">240 missing physician prediction</tspan>
+          <tspan x="700" dy="18">9 missing algorithm prediction</tspan>
+        </text>
+      </g>
+      <g id="included-lumc-high-dependency-unit">
+        <path id="included-lumc-high-dependency-unit-connector" d="M490 1396 V1439 H325 V1476" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="included-lumc-high-dependency-unit-box" x="170" y="1482" width="310" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="included-lumc-high-dependency-unit-label" x="325" y="1505" text-anchor="middle" font-size="13">
+          <tspan x="325" dy="0">11 discharged to</tspan>
+          <tspan x="325" dy="18">high-dependency unit</tspan>
+        </text>
+      </g>
+      <g id="included-lumc-nursing-ward">
+        <path id="included-lumc-nursing-ward-connector" d="M490 1396 V1439 H675 V1476" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" />
+        <rect id="included-lumc-nursing-ward-box" x="520" y="1482" width="310" height="52" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+        <text id="included-lumc-nursing-ward-label" x="675" y="1505" text-anchor="middle" font-size="13">
+          <tspan x="675" dy="0">246 discharged to</tspan>
+          <tspan x="675" dy="18">general ward</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
