@@ -1,5 +1,8 @@
 # Load required packages
 import os
+from pathlib import Path
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Bbox
 from matplotlib.patches import Rectangle
@@ -7,12 +10,40 @@ from matplotlib.colors import to_rgba
 
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
-from sklearn.metrics import roc_curve, precision_recall_curve, auc
+from sklearn.metrics import (
+    average_precision_score,
+    roc_curve,
+    precision_recall_curve,
+    auc,
+)
 from textwrap import wrap
 
-hospital = "Pacmed Medical Center"
-output_folder = "../figures"
+
+def _save_figure(fig, name, output_directory, *, tight=True):
+    """Save a deterministic SVG and an ignored submission PDF."""
+    output_directory = Path(output_directory)
+    output_directory.mkdir(parents=True, exist_ok=True)
+    bbox_inches = "tight" if tight else None
+    cohort = output_directory.name
+    with mpl.rc_context({"svg.hashsalt": f"{cohort}/{name}"}):
+        fig.savefig(
+            output_directory / f"{name}.svg",
+            format="svg",
+            bbox_inches=bbox_inches,
+            metadata={"Date": None},
+        )
+
+    if output_directory.parent.name == "figures":
+        project_root = output_directory.parent.parent
+        submission_directory = project_root / "results" / "submission_figures" / cohort
+    else:
+        submission_directory = output_directory / "submission_figures"
+    submission_directory.mkdir(parents=True, exist_ok=True)
+    fig.savefig(
+        submission_directory / f"{name}.pdf",
+        bbox_inches=bbox_inches,
+        metadata={"CreationDate": None},
+    )
 
 
 # Default:
@@ -21,28 +52,36 @@ plt.rcParams["mathtext.fontset"] = "dejavusans"
 # Serif type:
 # plt.rcParams["mathtext.fontset"] = 'dejavuserif'
 
+# Embed true outlines instead of Type 3 bitmap glyphs, so submitted PDFs pass journal
+# text-editability checks.
+plt.rcParams["pdf.fonttype"] = 42
 
-def barplot_by_outcome(data, variable, chi2=""):
+
+def barplot_by_outcome(data, variable, chi2="", *, output_directory):
     frequencies = data.loc[:, variable].value_counts(dropna=True, sort=True)
-    categories = np.array(list(frequencies.keys() * 3))
+    categories = np.array(sorted(frequencies.index))
     values = {
         "absolute": {
             "event": data.loc[data.outcome.eq(True), variable]
-            .value_counts(dropna=False, sort=True)
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values,
             "nonevent": data.loc[data.outcome.eq(False), variable]
-            .value_counts(dropna=False, sort=True)
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values,
         },
         "relative": {
             "event": 100
             * data.loc[data.outcome.eq(True), variable]
-            .value_counts(dropna=False, sort=True)
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values
             / sum(data.outcome.eq(True)),
             "nonevent": 100
             * data.loc[data.outcome.eq(False), variable]
-            .value_counts(dropna=False, sort=True)
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values
             / sum(data.outcome.eq(False)),
         },
@@ -95,43 +134,38 @@ def barplot_by_outcome(data, variable, chi2=""):
             fontsize="medium",
         )
 
-    plt.savefig(
-        os.path.join(output_folder, hospital, "barplot_physician_prediction_cat.pdf"),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(output_folder, hospital, "barplot_physician_prediction_cat.png"),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "barplot_physician_prediction_cat", output_directory)
 
 
-def barplot_confidence_cat_prediction(data, variable, chi2=""):
+def barplot_confidence_cat_prediction(data, variable, chi2="", *, output_directory):
     frequencies = data.loc[:, variable].value_counts(dropna=True, sort=True)
-    categories = np.array(list(frequencies.keys() * 3))
+    categories = np.array(sorted(frequencies.index))
 
     # only absolute will be used since the relative ones did not add much information
     values = {
         "absolute": {
-            "high": data.loc[data.confidence == "Veel", variable]
-            .value_counts(dropna=False, sort=True)
+            "high": data.loc[data.confidence == "high", variable]
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values,
-            "medium/low": data.loc[data.confidence == "Gemiddeld/Weinig", variable]
-            .value_counts(dropna=False, sort=True)
+            "medium/low": data.loc[data.confidence == "low/medium", variable]
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values,
         },
         "relative": {
             "high": 100
-            * data.loc[data.confidence == "Veel", variable]
-            .value_counts(dropna=False, sort=True)
+            * data.loc[data.confidence == "high", variable]
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values
-            / sum(data.confidence == "Veel"),
+            / sum(data.confidence == "high"),
             "medium/low": 100
-            * data.loc[data.confidence == "Gemiddeld/Weinig", variable]
-            .value_counts(dropna=False, sort=True)
+            * data.loc[data.confidence == "low/medium", variable]
+            .value_counts(dropna=True)
+            .reindex(categories, fill_value=0)
             .values
-            / sum(data.confidence == "Gemiddeld/Weinig"),
+            / sum(data.confidence == "low/medium"),
         },
     }
     fig = plt.figure(figsize=(10, 5))
@@ -186,23 +220,10 @@ def barplot_confidence_cat_prediction(data, variable, chi2=""):
             fontsize="medium",
         )
 
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "barplot_physician_prediction_cat_confidence.pdf"
-        ),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "barplot_physician_prediction_cat_confidence.png"
-        ),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "barplot_physician_prediction_cat_confidence", output_directory)
 
 
-def histogram_by_outcome(data, variables, ttest=""):
+def histogram_by_outcome(data, variables, ttest="", *, output_directory):
     fig = plt.figure(figsize=(12, 4))
     axes = [fig.add_subplot(131), fig.add_subplot(132), fig.add_subplot(133)]
 
@@ -244,24 +265,19 @@ def histogram_by_outcome(data, variables, ttest=""):
                 loc="left",
                 fontsize="medium",
             )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "histogram_physician_model_prediction.pdf"
-        ),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "histogram_physician_model_prediction.png"
-        ),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "histogram_physician_model_prediction", output_directory)
 
 
 def stratified_histogram(
-    data, variable, group, kruskal="", labels="", plotname="", title=""
+    data,
+    variable,
+    group,
+    kruskal="",
+    labels="",
+    plotname="",
+    title="",
+    *,
+    output_directory,
 ):
     groups = np.array(data[group].value_counts(dropna=True, sort=True).keys())
     colors = [
@@ -302,23 +318,10 @@ def stratified_histogram(
             loc="left",
             fontsize="medium",
         )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "stratified_histogram_" + plotname + ".pdf"
-        ),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "stratified_histogram_" + plotname + ".png"
-        ),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "stratified_histogram_" + plotname, output_directory)
 
 
-def scatter_plot(data, xs, ys, correlation=""):
+def scatter_plot(data, xs, ys, correlation="", *, output_directory):
     fig = plt.figure(figsize=(12, 4))
     axes = [fig.add_subplot(131), fig.add_subplot(132), fig.add_subplot(133)]
 
@@ -362,94 +365,101 @@ def scatter_plot(data, xs, ys, correlation=""):
                 loc="left",
                 fontsize="medium",
             )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "scatter_plot_physician_model_prediction.pdf"
-        ),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "scatter_plot_physician_model_prediction.png"
-        ),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "scatter_plot_physician_model_prediction", output_directory)
 
 
-def plot_calibration(predictions, outcome, prediction_columns):
-    group_n = len(prediction_columns)
-    colors = ["tab:blue", "tab:green", "tab:red", "tab:purple"]
-    fig, axs = plt.subplots(
-        1 + group_n,
-        1,
-        figsize=(6, 6),
-        sharex=True,
-        gridspec_kw={"height_ratios": [6] + [2 / group_n] * group_n, "hspace": 0},
-    )
-    # plot 45 degree line
-    axs[0].plot((0, 1), (0, 1), ls="--", c="#dbdbdb")
+def plot_calibration(curves, deciles, histograms, *, output_directory):
+    """Render saved calibration summaries without fitting or bootstrap sampling."""
+    from matplotlib.ticker import FuncFormatter
 
-    i = 1
-    for c in prediction_columns:
-        y = predictions[outcome]
-        p = predictions[prediction_columns[c]]
+    labels = list(curves["prediction_source"].drop_duplicates())
+    agent_colors = {
+        "Physician (Percentage)": "tab:blue",
+        "Physician (Category)": "tab:orange",
+        "Model": "tab:green",
+        "Model at Physician Prediction": "tab:green",
+        "Model at physician prediction": "tab:green",
+        "Combined (Percentage)": "tab:red",
+        "Combined (Category)": "tab:purple",
+        "Combined Model and Physician (Percentage)": "tab:red",
+        "Combined Model and Physician (Category)": "tab:purple",
+    }
+    unknown = set(labels) - set(agent_colors)
+    if unknown:
+        raise ValueError(f"unknown agents in calibration plot: {sorted(unknown)}")
+    os.makedirs(output_directory, exist_ok=True)
+    n_columns = min(2, len(labels))
+    n_rows = (len(labels) + n_columns - 1) // n_columns
+    fig = plt.figure(figsize=(6 * n_columns, 7 * n_rows), layout="constrained")
+    outer = fig.add_gridspec(n_rows, n_columns)
+    for i, label in enumerate(labels):
+        row, column = divmod(i, n_columns)
+        inner = outer[row, column].subgridspec(2, 1, height_ratios=[5, 1], hspace=0.03)
+        axis = fig.add_subplot(inner[0])
+        histogram = fig.add_subplot(inner[1], sharex=axis)
+        curve = curves.loc[curves.prediction_source.eq(label)]
+        groups = deciles.loc[deciles.prediction_source.eq(label)]
+        counts = histograms.loc[histograms.prediction_source.eq(label)]
+        if groups.empty or counts.empty:
+            raise ValueError(f"missing saved calibration summaries for {label}")
+        color = agent_colors[label]
+        axis.plot([0, 1], [0, 1], "--", color="grey", label="Ideal calibration")
+        axis.fill_between(
+            curve.predicted,
+            curve.lower,
+            curve.upper,
+            color=color,
+            alpha=0.2,
+            label="Pointwise 95% bootstrap CI",
+        )
+        axis.plot(
+            curve.predicted, curve.observed, color=color, label="Smoothed calibration"
+        )
+        axis.vlines(
+            groups.predicted, groups.lower, groups.upper, color=color, linewidth=1.5
+        )
+        axis.scatter(
+            groups.predicted,
+            groups.observed,
+            color=color,
+            edgecolor="black",
+            s=35,
+            zorder=4,
+            clip_on=False,
+            label="Risk deciles with 95% CI",
+        )
+        axis.set(
+            xlim=(0, 1),
+            ylim=(0, 1),
+            ylabel="Observed event proportion",
+            title=label.replace("Model at Physician Prediction", "Model").replace(
+                "Combined (", "Combined Model and Physician ("
+            ),
+        )
+        axis.set_aspect("equal", adjustable="box")
+        axis.tick_params(labelbottom=False)
+        axis.legend(fontsize="small", loc="best")
+        centers = (counts.bin_lower + counts.bin_upper) / 2
+        width = counts.bin_upper - counts.bin_lower
+        events, nonevents = counts.events, counts.nonevents
+        histogram.bar(centers, events, width=width, color="tab:red", label="Event")
+        histogram.bar(
+            centers, -nonevents, width=width, color="tab:blue", label="No event"
+        )
+        histogram.axhline(0, color="black", linewidth=0.6)
+        histogram.yaxis.set_major_formatter(
+            FuncFormatter(lambda value, _: f"{abs(value):g}")
+        )
+        histogram.set(xlabel="Predicted probability", ylabel="Count")
+        histogram.set_box_aspect(0.2)
+        histogram.legend(fontsize="small", loc="best")
+    _save_figure(fig, "calibration", output_directory)
+    return fig
 
-        # plot calibration curves, lowess smoothing
-        lowess = sm.nonparametric.lowess
-        z = lowess(endog=y, exog=p, frac=0.5, it=0, return_sorted=True)
-        axs[0].plot(z[:, 0], z[:, 1], color=colors[i - 1], label=c)
 
-        # plot histograms
-        axs[i].hist(p[y == 1], range=(0, 1), color=colors[i - 1], bins=100, bottom=1)
-        axs[i].get_yaxis().set_ticks([])
-        axs[i].spines["top"].set_color("#dbdbdb")
-        i += 1
-
-    # legend to the left:
-    # axs[0].legend(bbox_to_anchor=(1.05, 1),
-    #               loc='upper left', borderaxespad=0.)
-
-    # legend above plot:
-    axs[0].legend(
-        bbox_to_anchor=(0.0, 1.02, 1.0, 0.102),
-        fontsize="small",
-        loc="lower left",
-        mode="expand",
-        borderaxespad=0.0,
-    )
-
-    axs[0].set_ylabel("Observed Frequency")
-    axs[int(group_n / 2)].set_ylabel("Counts", horizontalalignment="right")
-    fig.align_ylabels()
-
-    # super title
-    # fig.suptitle(
-    #     f"Calibration plot",
-    #     x=fig.subplotpars.left,
-    #     y=fig.subplotpars.top + 0.01,
-    #     horizontalalignment="left",
-    #     verticalalignment="bottom",
-    #     fontweight="bold"
-    # )
-
-    axs[0].set_ylim(0, 1)
-    plt.xlim(0, 1)
-    plt.xlabel("Predicted Probability")
-    plt.savefig(
-        os.path.join(output_folder, hospital, "calibration.pdf"),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(output_folder, hospital, "calibration.png"),
-        bbox_inches="tight",
-        dpi=300,
-    )
-
-
-def plot_auc_at_max_time_difference(time_dif_data, prediction_columns):
+def plot_auc_at_max_time_difference(
+    time_dif_data, prediction_columns, *, output_directory
+):
     fig, ax = plt.subplots()
     x = time_dif_data["max_time_difference"]
     colors = [
@@ -489,23 +499,10 @@ def plot_auc_at_max_time_difference(time_dif_data, prediction_columns):
         fontweight="bold",
     )
 
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "AUC_at_different_max_time_difference.pdf"
-        ),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(
-            output_folder, hospital, "AUC_at_different_max_time_difference.png"
-        ),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "AUC_at_different_max_time_difference", output_directory)
 
 
-def plot_coverage_at_max_features(coverage_data):
+def plot_coverage_at_max_features(coverage_data, *, output_directory):
     fig, ax = plt.subplots()
     x = coverage_data["max_model_features"]
     colors = ["#3454D1", "#34D1BF", "#D1345B"]
@@ -526,19 +523,17 @@ def plot_coverage_at_max_features(coverage_data):
         fontweight="bold",
     )
 
-    plt.savefig(
-        os.path.join(output_folder, hospital, "coverage_at_different_max_features.pdf"),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(output_folder, hospital, "coverage_at_different_max_features.png"),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "coverage_at_different_max_features", output_directory)
 
 
-def plot_combined_curves(predictions, outcome, prediction_columns, curve="roc"):
+def plot_combined_curves(
+    predictions,
+    outcome,
+    prediction_columns,
+    curve="roc",
+    *,
+    output_directory,
+):
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.margins(x=0, y=0)
     ax.xaxis.labelpad = 15
@@ -565,25 +560,47 @@ def plot_combined_curves(predictions, outcome, prediction_columns, curve="roc"):
             x_axis, y_axis, thresholds = roc_curve(y_true, y_pred)
         elif curve == "prc":
             # suptitle = "Precision-Recall Curve"
-            xlabel = "Precision (Positive Predictive Value)"
-            ylabel = "Recall (Sensitivity)"
+            xlabel = "Recall (Sensitivity)"
+            ylabel = "Precision (Positive Predictive Value)"
 
-            # x_axis: precion, y_axis: recall
+            # x_axis: recall, y_axis: precision
             y_axis, x_axis, thresholds = precision_recall_curve(y_true, y_pred)
 
-        observed_auc = auc(x_axis, y_axis)
+        observed_auc = (
+            average_precision_score(y_true, y_pred)
+            if curve == "prc"
+            else auc(x_axis, y_axis)
+        )
 
         label = f"{column_desc} \n(AU{curve.upper()} = {observed_auc:#.2g})"
-        ax.plot(x_axis, y_axis, label=label, color=colors[i], linewidth=2)
-        if prev_y is None:
-            ax.fill_between(x_axis, y_axis, 0, alpha=0.2)
-        else:
-            plt.fill(
-                np.append(x_axis, prev_x[::-1]),
-                np.append(y_axis, prev_y[::-1]),
+        if curve == "prc":
+            ax.step(
+                x_axis,
+                y_axis,
+                where="post",
+                label=label,
                 color=colors[i],
-                alpha=0.2,
+                linewidth=2,
             )
+            ax.fill_between(
+                x_axis,
+                y_axis,
+                0,
+                step="post",
+                color=colors[i],
+                alpha=0.08,
+            )
+        else:
+            ax.plot(x_axis, y_axis, label=label, color=colors[i], linewidth=2)
+            if prev_y is None:
+                ax.fill_between(x_axis, y_axis, 0, color=colors[i], alpha=0.2)
+            else:
+                ax.fill(
+                    np.append(x_axis, prev_x[::-1]),
+                    np.append(y_axis, prev_y[::-1]),
+                    color=colors[i],
+                    alpha=0.2,
+                )
 
         prev_x = x_axis
         prev_y = y_axis
@@ -592,25 +609,32 @@ def plot_combined_curves(predictions, outcome, prediction_columns, curve="roc"):
 
     ax.set_xlabel(xlabel, fontsize=12)
     ax.set_ylabel(ylabel, fontsize=12)
-    ax.axline([0, 0], slope=1, color="black", linestyle="--")
+    if curve == "roc":
+        ax.axline([0, 0], slope=1, color="black", linestyle="--")
+    else:
+        ax.axhline(
+            predictions[outcome].mean(),
+            color="black",
+            linestyle="--",
+            label="Event prevalence",
+        )
     plt.axis("square")
 
-    ax.legend(loc="lower right", fontsize=10)
+    ax.legend(
+        loc="upper right" if curve == "prc" else "lower right",
+        fontsize=10,
+        facecolor="#fbf8ff",
+        framealpha=1.0,
+    )
 
-    plt.savefig(
-        os.path.join(output_folder, hospital, f"combined_{curve}_curves.pdf"),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(output_folder, hospital, f"combined_{curve}_curves.png"),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, f"combined_{curve}_curves", output_directory)
 
 
 def plot_performance_by_confidence(
-    performance_table_medium_low_confidence, performance_table_high_confidence
+    performance_table_medium_low_confidence,
+    performance_table_high_confidence,
+    *,
+    output_directory,
 ):
     columns = performance_table_medium_low_confidence.columns
     if "auroc" in columns:
@@ -619,33 +643,41 @@ def plot_performance_by_confidence(
         metric = "auprc"
 
     high_confidence_auroc = performance_table_high_confidence[metric].values
-    high_confidence_error_low = (
+    high_confidence_error_low = np.maximum(
+        0,
         high_confidence_auroc
         - performance_table_high_confidence[
             f"{metric}_confidence_interval_lower"
-        ].values
+        ].values,
     )
-    high_confidence_error_high = (
+    high_confidence_error_high = np.maximum(
+        0,
         performance_table_high_confidence[f"{metric}_confidence_interval_upper"].values
-        - high_confidence_auroc
+        - high_confidence_auroc,
     )
 
     low_confidence_auroc = performance_table_medium_low_confidence[metric].values
-    low_confidence_error_low = (
+    low_confidence_error_low = np.maximum(
+        0,
         low_confidence_auroc
         - performance_table_medium_low_confidence[
             f"{metric}_confidence_interval_lower"
-        ].values
+        ].values,
     )
-    low_confidence_error_high = (
+    low_confidence_error_high = np.maximum(
+        0,
         performance_table_medium_low_confidence[
             f"{metric}_confidence_interval_upper"
         ].values
-        - low_confidence_auroc
+        - low_confidence_auroc,
     )
 
     labels = performance_table_high_confidence.index.values
 
+    labels = [
+        label.replace("Combined (", "Combined Model and Physician (")
+        for label in labels
+    ]
     labels = [label.replace("(", "\n(") for label in labels]
     labels = ["\n".join(wrap(label, 12)) for label in labels]
 
@@ -695,16 +727,11 @@ def plot_performance_by_confidence(
         borderaxespad=0.0,
     )
 
-    plt.savefig(
-        os.path.join(output_folder, hospital, "performance_by_confidence.pdf"),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
-    )
-    plt.savefig(
-        os.path.join(output_folder, hospital, "performance_by_confidence.png"),
-        bbox_inches="tight",
-        dpi=300,
-    )
+    _save_figure(fig, "performance_by_confidence", output_directory)
+
+
+def _format_p_value(value):
+    return "< 0.001" if value < 0.001 else f"= {value:.3f}"
 
 
 def plot_bootstrap_auc_difference(
@@ -715,13 +742,12 @@ def plot_bootstrap_auc_difference(
     p_value,
     bootstrapped_differences,
     curve,
+    adjusted_p_value=None,
+    comparison_family=None,
 ):
     """
     Plot distribution of bootstrapped AUC differences
     """
-    if p_value is None:
-        return
-
     axis.hist(bootstrapped_differences, bins="auto")
     axis.axvline(
         observed_difference,
@@ -750,59 +776,99 @@ def plot_bootstrap_auc_difference(
 
     # place a text box in upper right in axes coords
     # these are matplotlib.patch.Patch properties
-    props = dict(boxstyle="round", facecolor="wheat", alpha=0.75)
-    p_text = f"$\\Delta_{{AU{curve.upper()}}} = {observed_difference:#.2g}$\n$p = {p_value:#.2g}$"
-    axis.text(
-        0.95,
-        0.95,
+    props = dict(boxstyle="round,pad=0.25", facecolor="#fbf8ff", alpha=1.0)
+    p_text = f"$\\Delta_{{AU{curve.upper()}}} = {observed_difference:#.2g}$"
+    if comparison_family != "exploratory":
+        if adjusted_p_value is not None and pd.notna(adjusted_p_value):
+            p_text += f"\n$p$ {_format_p_value(adjusted_p_value)}"
+        elif comparison_family is None and p_value is not None:
+            p_text += f"\n$p$ {_format_p_value(p_value)}"
+    if comparison_family is not None:
+        family_label = {
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "exploratory": "Exploratory",
+        }.get(comparison_family, comparison_family)
+        title = axis.set_title(
+            family_label, loc="left", fontsize="small", fontweight="bold", y=1.0, pad=4
+        )
+        if family_label in {"Primary", "Secondary"}:
+            title.set_color("white")
+            title.set_bbox(
+                dict(
+                    boxstyle="round,pad=0.2",
+                    facecolor="black",
+                    edgecolor="black",
+                )
+            )
+    axis.annotate(
         p_text,
-        transform=axis.transAxes,
+        xy=(1, 1),
+        xycoords="axes fraction",
+        xytext=(-8, -8),
+        textcoords="offset points",
+        fontsize=9,
+        linespacing=1.1,
         verticalalignment="top",
         horizontalalignment="right",
         bbox=props,
     )
 
 
-def full_extent(ax, pad=0.0):
-    """
-    Get the full extent of an axis, including axes labels, tick labels, and
-    titles.
-    """
-    # For text objects, the figure needs to be drawn first, otherwise the extents
-    # are undefined.
-    ax.figure.canvas.draw()
-    items = ax.get_xticklabels() + ax.get_yticklabels()
-    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-    # items += [ax, ax.title]
-    bbox = Bbox.union([item.get_window_extent() for item in items])
+def full_extent(axis, pad=0.0, *, draw=True):
+    """Return an axis extent including tick labels, labels, and its title."""
+    if draw:
+        axis.figure.canvas.draw()
+    renderer = axis.figure.canvas.get_renderer()
+    bbox = axis.get_tightbbox(renderer)
+    title_boxes = []
+    for artist in axis.get_children():
+        if hasattr(artist, "get_bbox_patch") and artist.get_bbox_patch() is not None:
+            artist.update_bbox_position_size(renderer)
+            title_boxes.append(artist.get_bbox_patch().get_window_extent(renderer))
+    bbox = Bbox.union([bbox, *title_boxes])
     return bbox.expanded(1.0 + pad, 1.0 + pad)
 
 
-def combined_auc_difference_plot(bootstrapped_data):
+def combined_auc_difference_plot(
+    bootstrapped_data, *, output_directory, agent_order=None, agent_colors=None
+):
     """
     Plot a collection of comparisons of AUC differences in a tabular format
     """
-    rows = list(bootstrapped_data.keys())
-    columns = list(bootstrapped_data[rows[0]].keys())
-
-    mosaic = []
-    # plot bootstrapping distribution
-    for row in rows:
-        row_mosaic = []
-        for column in bootstrapped_data[row]:
-            row_mosaic.append(f"{row}:{column}")
-
-        row_len_dif = len(rows) - len(row_mosaic)
-        if row_len_dif > 0:
-            row_mosaic = row_len_dif * ["."] + row_mosaic
-
-        mosaic.append(row_mosaic)
-
-    fig, axs = plt.subplot_mosaic(
-        mosaic=mosaic, sharex=True, sharey=True, layout="constrained", figsize=[12, 8]
+    if not bootstrapped_data or any(
+        not values for values in bootstrapped_data.values()
+    ):
+        raise ValueError("comparison matrix requires nonempty comparison rows")
+    rows = list(bootstrapped_data) if agent_order is None else agent_order[:-1]
+    columns = (
+        list(dict.fromkeys(column for row in rows for column in bootstrapped_data[row]))
+        if agent_order is None
+        else agent_order[1:]
     )
+    mosaic = [[f"{row}:{column}" for column in columns] for row in rows]
+    first_row = next(iter(bootstrapped_data))
+    first_key = f"{first_row}:{next(iter(bootstrapped_data[first_row]))}"
+    fig, axs = plt.subplot_mosaic(
+        mosaic=mosaic,
+        sharex=True,
+        sharey=True,
+        layout="constrained",
+        figsize=[12, 9.5],
+    )
+    fig.get_layout_engine().set(h_pad=0.18, w_pad=0.08)
+    for row in rows:
+        for column in columns:
+            if column not in bootstrapped_data.get(row, {}):
+                axs[f"{row}:{column}"].set_axis_off()
 
-    axs[f"{rows[0]}:{columns[0]}"].set_xlim(-0.25, 0.55)
+    curves = {
+        values[5] for row in bootstrapped_data.values() for values in row.values()
+    }
+    if len(curves) != 1:
+        raise ValueError("select one AUC metric for the matrix")
+    curve = next(iter(curves))
+    axs[first_key].set_xlim((-0.25, 0.55) if curve == "roc" else (-1, 1))
 
     # plot bootstrapping distribution
     for row in bootstrapped_data.keys():
@@ -814,6 +880,7 @@ def combined_auc_difference_plot(bootstrapped_data):
                 p_value,
                 bootstrapped_differences,
                 curve,
+                *extra,
             ) = bootstrapped_data[row][column]
             plot_bootstrap_auc_difference(
                 axs[f"{row}:{column}"],
@@ -823,13 +890,15 @@ def combined_auc_difference_plot(bootstrapped_data):
                 p_value,
                 bootstrapped_differences,
                 curve,
+                adjusted_p_value=extra[0] if extra else None,
+                comparison_family=extra[1] if len(extra) > 1 else None,
             )
 
     # show ticks for first graph of each row
     for row in mosaic:
         first = True
         for column_name in row:
-            if column_name == ".":
+            if column_name == "." or not axs[column_name].axison:
                 continue
             axs[column_name].tick_params(labelleft=True, labelbottom=True)
             if first:
@@ -837,239 +906,578 @@ def combined_auc_difference_plot(bootstrapped_data):
                 axs[column_name].set_ylabel("frequency")
             first = False
 
-    # add_row_rectangles
-    # row titles:
-    x_padding = 0.02
+    fig.canvas.draw()
+    fig.set_layout_engine("none")
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    for axis in axs.values():
+        title = axis._left_title
+        badge = title.get_bbox_patch()
+        if axis.axison and badge is not None:
+            title.update_bbox_position_size(renderer)
+            shift = (
+                axis.get_window_extent(renderer).xmin
+                - badge.get_window_extent(renderer).xmin
+            )
+            x, y = title.get_position()
+            title.set_position((x + shift / axis.get_window_extent(renderer).width, y))
+    fig.canvas.draw()
+    extents = {axis: full_extent(axis, draw=False) for axis in axs.values()}
 
-    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
+    default_colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
+    agent_colors = agent_colors or {
+        agent: default_colors[index % len(default_colors)]
+        for index, agent in enumerate(agent_order or rows + [columns[-1]])
+    }
+
+    active_axes = [axs[key] for row in mosaic for key in row if axs[key].axison]
+    extent_all = Bbox.union([extents[axis] for axis in active_axes])
+    extent_all = extent_all.transformed(fig.transFigure.inverted())
+    outer_padding = 4 / 72 / fig.get_figheight()
+    horizontal_padding = 6 / 72 / fig.get_figwidth()
+    extent_all = Bbox.from_extents(
+        extent_all.xmin - horizontal_padding,
+        extent_all.ymin - outer_padding,
+        extent_all.xmax + horizontal_padding,
+        extent_all.ymax + outer_padding,
+    )
+    cell_width = extent_all.width / len(columns)
+    left_clearance = (
+        max(
+            axis.get_position().xmin
+            - extents[axis].transformed(fig.transFigure.inverted()).xmin
+            for axis in active_axes
+        )
+        + horizontal_padding
+    )
+    right_clearance = (
+        max(
+            extents[axis].transformed(fig.transFigure.inverted()).xmax
+            - axis.get_position().xmax
+            for axis in active_axes
+        )
+        + horizontal_padding
+    )
+    for row_keys in mosaic:
+        for column_index, key in enumerate(row_keys):
+            axis = axs[key]
+            position = axis.get_position()
+            axis.set_position(
+                [
+                    extent_all.xmin + column_index * cell_width + left_clearance,
+                    position.y0,
+                    cell_width - left_clearance - right_clearance,
+                    position.height,
+                ]
+            )
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    for axis in active_axes:
+        title = axis._left_title
+        badge = title.get_bbox_patch()
+        if badge is not None:
+            title.update_bbox_position_size(renderer)
+            axis_bounds = axis.get_window_extent(renderer)
+            shift = axis_bounds.xmin - badge.get_window_extent(renderer).xmin
+            x, y = title.get_position()
+            title.set_position((x + shift / axis_bounds.width, y))
+    fig.canvas.draw()
+    extents = {axis: full_extent(axis, draw=False) for axis in axs.values()}
+    row_extents = []
+    for row_keys in mosaic:
+        axes = [axs[key] for key in row_keys if axs[key].axison]
+        extent = Bbox.union([extents[axis] for axis in axes])
+        row_extents.append(extent.transformed(fig.transFigure.inverted()))
 
     row_titles = []
     row_header_containers = []
-    extent_first_row = Bbox.union(
-        [full_extent(axs[col_name]) for col_name in mosaic[0]]
+    x_padding = 0.02
+    # Pack full subplot bounds with equal clearance inside continuous row bands.
+    title_clearance = 6 / 72 / fig.get_figheight()
+    cell_height = (
+        max(extent.height for extent in row_extents) + outer_padding + title_clearance
     )
-    extent_first_row = extent_first_row.transformed(fig.transFigure.inverted())
-    extent_all = Bbox.union(
-        [
-            full_extent(axs[col_name])
-            for row in mosaic
-            for col_name in row
-            if col_name != "."
-        ]
+    row_edges = [extent_all.ymin]
+    bottom = extent_all.ymin
+    for row_keys, extent in reversed(list(zip(mosaic, row_extents))):
+        shift = bottom + outer_padding - extent.ymin
+        for key in row_keys:
+            axis = axs[key]
+            position = axis.get_position()
+            axis.set_position(
+                [position.x0, position.y0 + shift, position.width, position.height]
+            )
+        bottom += cell_height
+        row_edges.append(bottom)
+    row_edges.reverse()
+    fig.canvas.draw()
+    extents = {axis: full_extent(axis, draw=False) for axis in axs.values()}
+    extent_all = Bbox.from_extents(
+        extent_all.xmin,
+        extent_all.ymin,
+        extent_all.xmax,
+        row_edges[0],
     )
-    extent_all = extent_all.transformed(fig.transFigure.inverted())
+    row_geometry = [
+        (bottom, top - bottom) for top, bottom in zip(row_edges, row_edges[1:])
+    ]
 
-    ymin_prev = np.nan
-    for i, row in zip(
-        range(0, len(bootstrapped_data.keys())), bootstrapped_data.keys()
-    ):
-        column_names = [col for col in mosaic[i] if col != "."]  # remove 'empty' axis
-        extent = Bbox.union([full_extent(axs[col_name]) for col_name in column_names])
-        extent = extent.transformed(fig.transFigure.inverted())
-
-        if ymin_prev != np.nan and extent.ymax > ymin_prev:
-            ymin = extent.ymin
-            height = extent.height - (extent.ymax - ymin_prev)
-        else:
-            ymin = extent.ymin
-            height = extent.height
-
+    for index, (row, (bottom, height)) in enumerate(zip(rows, row_geometry)):
         row_titles.append(
             fig.text(
-                x=extent_first_row.xmin - x_padding,
-                y=(ymin + height / 2),
-                s="and\n".join(row.split("and ")),
+                extent_all.xmin - x_padding,
+                bottom + height / 2,
+                "and\n".join(row.split("and ")),
                 fontweight="bold",
-                color=colors[i],
-                transform=fig.transFigure,
-                horizontalalignment="center",
-                verticalalignment="center",
+                fontsize="small",
+                multialignment="center",
+                color=agent_colors[row],
+                ha="center",
+                va="center",
                 rotation=90,
+                transform=fig.transFigure,
             )
         )
 
-        ymin_prev = extent.ymin
-
-    ymin_prev = np.nan
-    for i in range(0, len(mosaic)):
-        column_names = [col for col in mosaic[i] if col != "."]  # remove 'empty' axis
-        extent = Bbox.union([full_extent(axs[col_name]) for col_name in column_names])
-
-        extent = extent.transformed(fig.transFigure.inverted())
-
-        if ymin_prev != np.nan and extent.ymax > ymin_prev:
-            ymin = extent.ymin
-            height = extent.height - (extent.ymax - ymin_prev)
-        else:
-            ymin = extent.ymin
-            height = extent.height
-
-        # row dividers
-        rect = Rectangle(
-            xy=(extent_first_row.xmin, ymin),
-            width=extent_all.width,
-            height=height,
-            facecolor=to_rgba(colors[i], 0.25),
-            edgecolor=to_rgba("black", 1),
+    fig.canvas.draw()
+    label_extent = (
+        row_titles[0].get_window_extent().transformed(fig.transFigure.inverted())
+    )
+    header_width = 2 * (extent_all.xmin - (label_extent.xmin + label_extent.xmax) / 2)
+    for index, (bottom, height) in enumerate(row_geometry):
+        fig.patches.append(
+            Rectangle(
+                (extent_all.xmin, bottom),
+                extent_all.width,
+                height,
+                facecolor=to_rgba(agent_colors[rows[index]], 0.25),
+                edgecolor="black",
+                zorder=-1,
+                transform=fig.transFigure,
+            )
+        )
+        header = Rectangle(
+            (extent_all.xmin - header_width, bottom),
+            header_width,
+            height,
+            facecolor=to_rgba(agent_colors[rows[index]], 0.20),
+            edgecolor=to_rgba(agent_colors[rows[index]], 0.50),
+            linewidth=0.8,
             zorder=-1,
             transform=fig.transFigure,
         )
-        fig.patches.append(rect)
+        fig.patches.append(header)
+        row_header_containers.append(header)
 
-        # row header containers
-        extent_label = Bbox.union([row_titles[0].get_window_extent()])
-        extent_label = extent_label.transformed(fig.transFigure.inverted())
-        width = 2 * (
-            extent_first_row.xmin - (extent_label.xmin + extent_label.xmax) / 2
-        )
-        rect2 = Rectangle(
-            xy=(extent_first_row.xmin - width, ymin),
-            width=width,
-            height=height,
-            facecolor="black",
-            edgecolor="white",
-            zorder=-1,
-            transform=fig.transFigure,
-        )
-        fig.patches.append(rect2)
-        row_header_containers.append(rect2)
+    column_geometry = [
+        (extent_all.xmin + index * cell_width, cell_width)
+        for index in range(len(columns))
+    ]
 
-        ymin_prev = extent.ymin
-
-    # column titles:
+    header_padding = 0.008
     column_titles = []
-    column_header_containers = []
-    extent_last_column = Bbox.union([full_extent(axs[row[-1]]) for row in mosaic])
-    extent_last_column = extent_last_column.transformed(fig.transFigure.inverted())
-    y_padding = 0.025
-
-    xmax_prev = np.nan
-    for i in range(0, len(mosaic[0])):
-        row_names = [row[i] for row in mosaic if row[i] != "."]  # remove 'empty' axis
-        extent = Bbox.union([full_extent(axs[row_name]) for row_name in row_names])
-        extent = extent.transformed(fig.transFigure.inverted())
-
-        if xmax_prev != np.nan and extent.xmin < xmax_prev:
-            xmin = xmax_prev
-            width = extent.width - (xmax_prev - extent.xmin)
-        else:
-            xmin = extent.xmin
-            width = extent.width
-
+    for index, (column, (left, width)) in enumerate(zip(columns, column_geometry)):
         column_titles.append(
             fig.text(
-                x=(xmin + width / 2),
-                y=(extent_last_column.ymin + extent_last_column.height + y_padding),
-                s="and\n".join(columns[i].split("and ")),
+                left + width / 2,
+                extent_all.ymax + header_padding,
+                "and\n".join(column.split("and ")),
                 fontweight="bold",
-                color=colors[i + 1],
+                fontsize="small",
+                color=agent_colors[column],
+                ha="center",
+                va="bottom",
                 transform=fig.transFigure,
-                horizontalalignment="center",
-                verticalalignment="center",
-                rotation=0,
             )
         )
-        xmax_prev = xmin + width
 
-    xmax_prev = np.nan
-    for i in range(0, len(mosaic[0])):
-        row_names = [row[i] for row in mosaic if row[i] != "."]  # remove 'empty' axis
-        extent = Bbox.union([full_extent(axs[row_name]) for row_name in row_names])
-        extent = extent.transformed(fig.transFigure.inverted())
-
-        if xmax_prev != np.nan and extent.xmin < xmax_prev:
-            xmin = xmax_prev
-            width = extent.width - (xmax_prev - extent.xmin)
-        else:
-            xmin = extent.xmin
-            width = extent.width
-
-        # column dividers
-        rect = Rectangle(
-            xy=(xmin, extent_last_column.ymin),
-            width=width,
-            height=extent_last_column.height,
-            facecolor=to_rgba(colors[i + 1], 0.25),
-            edgecolor=to_rgba("black", 1),
+    fig.canvas.draw()
+    title_extent = Bbox.union(
+        [title.get_window_extent() for title in column_titles]
+    ).transformed(fig.transFigure.inverted())
+    header_height = title_extent.ymax - extent_all.ymax + header_padding
+    for title in column_titles:
+        title.set_y(extent_all.ymax + header_height / 2)
+        title.set_verticalalignment("center")
+        title.set_multialignment("center")
+    column_header_containers = []
+    for index, (left, width) in enumerate(column_geometry):
+        fig.patches.append(
+            Rectangle(
+                (left, extent_all.ymin),
+                width,
+                extent_all.height,
+                facecolor=to_rgba(agent_colors[columns[index]], 0.25),
+                edgecolor="black",
+                zorder=-1,
+                transform=fig.transFigure,
+            )
+        )
+        header = Rectangle(
+            (left, extent_all.ymax),
+            width,
+            header_height,
+            facecolor=to_rgba(agent_colors[columns[index]], 0.20),
+            edgecolor=to_rgba(agent_colors[columns[index]], 0.50),
+            linewidth=0.8,
             zorder=-1,
             transform=fig.transFigure,
         )
-        fig.patches.append(rect)
+        fig.patches.append(header)
+        column_header_containers.append(header)
 
-        # column header containers
-        extent_label = Bbox.union([item.get_window_extent() for item in column_titles])
-        extent_label = extent_label.transformed(fig.transFigure.inverted())
-
-        height = 2 * (
-            (extent_label.ymin + extent_label.ymax) / 2 - extent_last_column.ymax
-        )
-        rect2 = Rectangle(
-            xy=(xmin, extent_last_column.ymax),
-            width=width,
-            height=height,
-            facecolor="black",
-            edgecolor="white",
-            zorder=-1,
-            transform=fig.transFigure,
-        )
-        fig.patches.append(rect2)
-        column_header_containers.append(rect2)
-
-        xmax_prev = xmin + width
-
-    # add "vs." label
-    extent_row_header = Bbox.union(
-        [row_header_containers[0].get_window_extent()]
-    ).transformed(fig.transFigure.inverted())
-    extent_column_header = Bbox.union(
-        [column_header_containers[0].get_window_extent()]
-    ).transformed(fig.transFigure.inverted())
-
+    row_header_extent = (
+        row_header_containers[0]
+        .get_window_extent()
+        .transformed(fig.transFigure.inverted())
+    )
+    column_header_extent = (
+        column_header_containers[0]
+        .get_window_extent()
+        .transformed(fig.transFigure.inverted())
+    )
     fig.text(
-        x=(extent_row_header.xmin + extent_column_header.xmin) / 2,
-        y=(extent_row_header.ymax + extent_column_header.ymax) / 2,
-        s="vs.",
+        (row_header_extent.xmin + column_header_extent.xmin) / 2,
+        (row_header_extent.ymax + column_header_extent.ymax) / 2,
+        "vs.",
         fontsize="xx-large",
         color="black",
-        transform=fig.transFigure,
-        horizontalalignment="center",
-        verticalalignment="center",
+        ha="center",
+        va="center",
         rotation=45,
+        transform=fig.transFigure,
     )
 
-    # add legend
-    extent_last_row_header = Bbox.union(
-        [row_header_containers[-1].get_window_extent()]
-    ).transformed(fig.transFigure.inverted())
-    handles, labels = axs[f"{rows[0]}:{columns[0]}"].get_legend_handles_labels()
-
+    handles, labels = axs[first_key].get_legend_handles_labels()
+    last_row_header_extent = (
+        row_header_containers[-1]
+        .get_window_extent()
+        .transformed(fig.transFigure.inverted())
+    )
     fig.legend(
         handles,
         labels,
         loc="lower left",
-        bbox_to_anchor=[
-            extent_last_row_header.xmax,
-            extent_last_row_header.ymin,
-        ],
+        bbox_to_anchor=(last_row_header_extent.xmax, last_row_header_extent.ymin),
+        facecolor="#fbf8ff",
+        framealpha=1.0,
     )
 
-    # # add 'super' title
-    # fig.suptitle(
-    #     f"Comparison of predictive performance by differences in AU{curve.upper()}",
-    #     x=extent_row_header.xmin,
-    #     y=extent_column_header.ymax + y_padding,
-    #     verticalalignment="bottom",
-    #     horizontalalignment="left",
-    #     fontweight="bold"
-    # )
+    name = "combined_auc_difference" if curve == "roc" else "combined_auprc_difference"
+    _save_figure(fig, name, output_directory)
+    return fig
 
-    plt.savefig(
-        os.path.join(output_folder, hospital, "combined_auc_difference.pdf"),
-        bbox_inches="tight",
-        metadata={"CreationDate": None},
+
+def performance_contrast_forest_plot(
+    contrasts,
+    *,
+    output_directory,
+    formal_comparisons=False,
+    show_adjusted_p_values=False,
+):
+    """Plot contrasts with nominal intervals and adjusted p values for formal tests."""
+    data = contrasts.copy()
+    metric = data["metric"].iloc[0] if "metric" in data else "auroc"
+    if metric not in {"auroc", "auprc"} or (
+        "metric" in data and data["metric"].nunique() != 1
+    ):
+        raise ValueError("select a single AUROC or AUPRC metric")
+    agent_order = [
+        "Model at Physician Prediction",
+        "Physician (Percentage)",
+        "Physician (Category)",
+        "Combined (Percentage)",
+        "Combined (Category)",
+    ]
+    rank = {agent: index for index, agent in enumerate(agent_order)}
+    unknown = (set(data["agent_1"]) | set(data["agent_2"])) - set(agent_order)
+    if unknown:
+        raise ValueError(f"unknown agents in forest plot: {sorted(unknown)}")
+    data["left_agent"] = data["agent_2"]
+    data["right_agent"] = data["agent_1"]
+    model_physician = data["right_agent"].eq("Model at Physician Prediction") & data[
+        "left_agent"
+    ].isin(["Physician (Percentage)", "Physician (Category)"])
+    data["section"] = np.where(model_physician, 0, 1)
+    data["left_rank"] = data["left_agent"].map(rank)
+    data["right_rank"] = data["right_agent"].map(rank)
+    data = data.sort_values(["section", "left_rank", "right_rank"]).reset_index(
+        drop=True
     )
-    plt.savefig(
-        os.path.join(output_folder, hospital, "combined_auc_difference.png"),
-        bbox_inches="tight",
-        dpi=300,
+    y = np.empty(len(data))
+    section_positions = []
+    cursor = 0.0
+    for section, group in data.groupby("section", sort=True):
+        if section == 0 and formal_comparisons:
+            label = "Primary" if metric == "auroc" else "Secondary"
+        elif section == 0:
+            label = "Model vs physician"
+        elif formal_comparisons:
+            label = "Exploratory"
+        else:
+            label = "Other comparisons"
+        section_positions.append((cursor, label))
+        cursor += 0.9
+        for index in group.index:
+            y[index] = cursor
+            cursor += 1.0
+        cursor += 0.6
+    differences = data["difference_agent_1_minus_agent_2"].to_numpy(dtype=float)
+    confidence_interval_lower = data["confidence_interval_lower"].to_numpy(dtype=float)
+    confidence_interval_upper = data["confidence_interval_upper"].to_numpy(dtype=float)
+    agent_labels = {
+        "Model at Physician Prediction": "Model",
+        "Physician (Percentage)": "Physician (Percentage)",
+        "Physician (Category)": "Physician (Category)",
+        "Combined (Percentage)": "Combined Model and\nPhysician (Percentage)",
+        "Combined (Category)": "Combined Model and\nPhysician (Category)",
+    }
+    agent_colors = {
+        "Model at Physician Prediction": "tab:green",
+        "Physician (Percentage)": "tab:blue",
+        "Physician (Category)": "tab:orange",
+        "Combined (Percentage)": "tab:red",
+        "Combined (Category)": "tab:purple",
+    }
+
+    fig, ax = plt.subplots(figsize=(12, max(5, 0.72 * len(data))))
+    fig.subplots_adjust(left=0.30, right=0.70, top=0.93, bottom=0.12)
+    for index, row in data.iterrows():
+        color = "#444444"
+        ax.plot(
+            differences[index],
+            y[index],
+            "o",
+            color=color,
+            markersize=8,
+            zorder=3,
+        )
+        ax.hlines(
+            y[index],
+            confidence_interval_lower[index],
+            confidence_interval_upper[index],
+            color=color,
+            linewidth=3,
+            zorder=3,
+        )
+        ax.vlines(
+            [confidence_interval_lower[index], confidence_interval_upper[index]],
+            y[index] - 0.07,
+            y[index] + 0.07,
+            color=color,
+            linewidth=2,
+            zorder=3,
+        )
+        family = row.get("family")
+        adjusted_p = row.get("p_holm")
+        if (
+            show_adjusted_p_values
+            and family in {"primary", "secondary"}
+            and pd.notna(adjusted_p)
+        ):
+            p_text = "<0.001" if adjusted_p < 0.001 else f"= {adjusted_p:.3f}"
+            text_direction = 1 if differences[index] >= 0 else -1
+            ax.annotate(
+                f"Holm-adjusted $p$ {p_text}",
+                xy=(differences[index], y[index]),
+                xytext=(6 * text_direction, -13),
+                textcoords="offset points",
+                ha="left" if text_direction > 0 else "right",
+                va="top",
+                fontsize="small",
+                color="#444444",
+                zorder=4,
+                bbox={
+                    "facecolor": "white",
+                    "edgecolor": "none",
+                    "alpha": 0.9,
+                    "pad": 1.0,
+                },
+            )
+        for side, left in (("left_agent", -0.70), ("right_agent", 1.08)):
+            agent = row[side]
+            card_color = agent_colors[agent]
+            ax.add_patch(
+                Rectangle(
+                    (left, y[index] - 0.36),
+                    0.62,
+                    0.72,
+                    facecolor=to_rgba(card_color, 0.20),
+                    edgecolor=to_rgba(card_color, 0.50),
+                    linewidth=0.8,
+                    transform=ax.get_yaxis_transform(),
+                    clip_on=False,
+                    zorder=2,
+                )
+            )
+            ax.text(
+                left + 0.31,
+                y[index],
+                agent_labels[agent],
+                color=card_color,
+                fontweight="bold",
+                ha="center",
+                va="center",
+                transform=ax.get_yaxis_transform(),
+                clip_on=False,
+                zorder=3,
+            )
+
+    ax.axvline(0, color="black", linewidth=0.9, linestyle="--", zorder=1)
+    ax.set_yticks(y, [""] * len(data))
+    ax.tick_params(axis="y", length=0, pad=8)
+    ax.set_ylim(cursor - 0.7, -0.5)
+    ax.set_xlabel(f"$\\Delta$AU{metric[2:].upper()} (right agent - left agent)")
+    for position, label in section_positions:
+        ax.text(
+            -0.70,
+            position,
+            label,
+            transform=ax.get_yaxis_transform(),
+            ha="left",
+            va="center",
+            fontweight="bold",
+            color="black",
+            clip_on=False,
+        )
+        ax.axhline(position + 0.35, color="#BBBBBB", linewidth=0.8)
+
+    ax.grid(axis="x", alpha=0.2)
+    ax.grid(axis="y", color="#E5E5E5", linewidth=0.7)
+    ax.set_title("Pairwise performance contrasts", pad=18, fontweight="bold")
+    ax.text(
+        0.0,
+        -0.09,
+        "Favours left agent",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize="small",
+        color="#555555",
+    )
+    ax.text(
+        1.0,
+        -0.09,
+        "Favours right agent",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize="small",
+        color="#555555",
+    )
+    for spine in ("top", "right", "left"):
+        ax.spines[spine].set_visible(False)
+    name = "auroc_contrast_forest" if metric == "auroc" else "auprc_contrast_forest"
+    _save_figure(fig, name, output_directory)
+    return fig
+
+
+def performance_contrast_matrix_plot(contrasts, bootstrap_samples, *, output_directory):
+    """Render all unique pairwise contrasts in a row-minus-column matrix."""
+    if contrasts.empty:
+        raise ValueError("comparison matrix requires contrasts")
+    if contrasts["contrast_id"].duplicated().any():
+        raise ValueError("contrast IDs must be unique; select one cohort and metric")
+    if contrasts.duplicated(["agent_1", "agent_2"]).any():
+        raise ValueError("comparison pairs must be unique")
+    metric = contrasts["metric"].iloc[0] if "metric" in contrasts else "auroc"
+    if metric not in ("auroc", "auprc") or (
+        "metric" in contrasts and contrasts["metric"].nunique() != 1
+    ):
+        raise ValueError("select a single AUROC or AUPRC metric")
+    curve = metric[2:]
+    display_labels = {
+        "Model at Physician Prediction": "Model",
+        "Combined (Percentage)": "Combined Model and Physician (Percentage)",
+        "Combined (Category)": "Combined Model and Physician (Category)",
+    }
+    contrasts = contrasts.copy()
+    for column in ("agent_1", "agent_2"):
+        contrasts[column] = contrasts[column].replace(display_labels)
+    if contrasts.duplicated(["agent_1", "agent_2"]).any():
+        raise ValueError("comparison display labels must identify unique pairs")
+
+    model = "Model"
+    physician_percentage = "Physician (Percentage)"
+    physician_category = "Physician (Category)"
+    combined_percentage = "Combined Model and Physician (Percentage)"
+    combined_category = "Combined Model and Physician (Category)"
+    order = [
+        model,
+        physician_percentage,
+        physician_category,
+        combined_percentage,
+        combined_category,
+    ]
+    present = set(contrasts["agent_1"]) | set(contrasts["agent_2"])
+    if present != set(order):
+        raise ValueError(f"comparison matrix requires {order}; found {sorted(present)}")
+    rank = {agent: index for index, agent in enumerate(order)}
+    comparisons = {}
+    for _, row in contrasts.sort_values("contrast_id").iterrows():
+        samples = bootstrap_samples.loc[
+            bootstrap_samples["contrast_id"].eq(row["contrast_id"]),
+            "bootstrap_difference_agent_1_minus_agent_2",
+        ].dropna()
+        if samples.empty:
+            raise ValueError(
+                f"missing bootstrap differences for contrast {row['contrast_id']}"
+            )
+        agent_1, agent_2 = row["agent_1"], row["agent_2"]
+        matrix_row, matrix_column = sorted((agent_1, agent_2), key=rank.__getitem__)
+        if agent_1 == matrix_row:
+            difference = row["difference_agent_1_minus_agent_2"]
+            lower = row["confidence_interval_lower"]
+            upper = row["confidence_interval_upper"]
+            oriented_samples = samples
+        else:
+            difference = -row["difference_agent_1_minus_agent_2"]
+            lower = -row["confidence_interval_upper"]
+            upper = -row["confidence_interval_lower"]
+            oriented_samples = -samples
+        primary = matrix_row == model and matrix_column in {
+            physician_percentage,
+            physician_category,
+        }
+        comparisons.setdefault(matrix_row, {})[matrix_column] = (
+            difference,
+            lower,
+            upper,
+            row["p"],
+            oriented_samples,
+            curve,
+            row.get("p_holm"),
+            (
+                "primary"
+                if primary and metric == "auroc"
+                else "secondary"
+                if primary
+                else "exploratory"
+            ),
+        )
+    expected_pairs = {
+        (order[left], order[right])
+        for left in range(len(order) - 1)
+        for right in range(left + 1, len(order))
+    }
+    actual_pairs = {
+        (row, column) for row, columns in comparisons.items() for column in columns
+    }
+    if actual_pairs != expected_pairs:
+        raise ValueError(
+            f"comparison matrix is missing pairs: {sorted(expected_pairs - actual_pairs)}"
+        )
+
+    agent_colors = {
+        physician_percentage: "tab:blue",
+        physician_category: "tab:orange",
+        model: "tab:green",
+        combined_percentage: "tab:red",
+        combined_category: "tab:purple",
+    }
+    return combined_auc_difference_plot(
+        comparisons,
+        output_directory=output_directory,
+        agent_order=order,
+        agent_colors=agent_colors,
     )
